@@ -59,31 +59,42 @@ while ( have_posts() ) :
 		}
 	}
 
+	$dc_episodes = viko_meta( $pid, 'dramacool_episodes' );
+	$has_dc_data = ( is_array( $dc_episodes ) && ! empty( $dc_episodes ) );
+
 	$players = viko_build_players( $pid );
 
-	// Force Server 1 to be VidSrc ME
-	$vidsrc_found = false;
-	foreach ( $players as $k => $p ) {
-		if ( strpos( $p['url'], 'vidsrc.me' ) !== false || strpos( strtolower( $p['label'] ), 'vidsrc' ) !== false ) {
-			$vidsrc_found = true;
-			if ( $k !== 0 ) {
-				$v_item = $players[ $k ];
-				unset( $players[ $k ] );
-				array_unshift( $players, $v_item );
+	// If DramaCool scraped data exists for episode 1, initialize with DramaCool Fast Server
+	if ( $has_dc_data && isset( $dc_episodes[1]['servers'] ) && ! empty( $dc_episodes[1]['servers'] ) ) {
+		$initial_url = $dc_episodes[1]['servers'][0]['url'];
+	} else {
+		// Force Server 1 to be VidSrc ME for standard library
+		$vidsrc_found = false;
+		foreach ( $players as $k => $p ) {
+			if ( strpos( $p['url'], 'vidsrc.me' ) !== false || strpos( strtolower( $p['label'] ), 'vidsrc' ) !== false ) {
+				$vidsrc_found = true;
+				if ( $k !== 0 ) {
+					$v_item = $players[ $k ];
+					unset( $players[ $k ] );
+					array_unshift( $players, $v_item );
+				}
+				break;
 			}
-			break;
 		}
-	}
-	if ( ! $vidsrc_found ) {
-		$vidsrc_url = $is_ep ? "https://vidsrc.me/embed/tv/{$target_id}/{season}/{episode}" : "https://vidsrc.me/embed/movie/{$target_id}";
-		array_unshift( $players, array( 'label' => 'Server 1 (VidSrc ME)', 'url' => $vidsrc_url, 'auto' => true ) );
-	}
-	$players = array_values( $players );
+		if ( ! $vidsrc_found ) {
+			$vidsrc_url = $is_ep ? "https://vidsrc.me/embed/tv/{$target_id}/{season}/{episode}" : "https://vidsrc.me/embed/movie/{$target_id}";
+			array_unshift( $players, array( 'label' => 'Server 1 (VidSrc ME)', 'url' => $vidsrc_url, 'auto' => true ) );
+		}
+		$players = array_values( $players );
 
-	// Initial player URL
+		// Initial player URL
+		$initial_season  = ! empty( $seasons_map ) ? (int) $seasons_map[0]['s'] : 1;
+		$initial_episode = 1;
+		$initial_url     = str_replace( array( '{season}', '{episode}' ), array( $initial_season, $initial_episode ), $players[0]['url'] );
+	}
+
 	$initial_season  = ! empty( $seasons_map ) ? (int) $seasons_map[0]['s'] : 1;
 	$initial_episode = 1;
-	$initial_url     = str_replace( array( '{season}', '{episode}' ), array( $initial_season, $initial_episode ), $players[0]['url'] );
 
 	$genres  = get_the_terms( $pid, 'viko_genre' );
 	$cast    = viko_meta( $pid, 'cast' );
@@ -396,20 +407,75 @@ while ( have_posts() ) :
 		var isEpisodic = <?php echo $is_ep ? 'true' : 'false'; ?>;
 		var currentSeason = <?php echo (int) $initial_season; ?>;
 		var currentEpisode = <?php echo (int) $initial_episode; ?>;
-		var currentTemplate = "<?php echo esc_js( $players[0]['url'] ); ?>";
+		var currentTemplate = "<?php echo esc_js( $players[0]['url'] ?? '' ); ?>";
+		var dcEpisodes = <?php echo ( $has_dc_data ? wp_json_encode( $dc_episodes ) : 'null' ); ?>;
+		var srvContainer = document.getElementById('dynamic-servers-container');
+
+		function renderServersForEpisode(epNum) {
+			if (!dcEpisodes || !dcEpisodes[epNum] || !dcEpisodes[epNum].servers || !dcEpisodes[epNum].servers.length) {
+				return false;
+			}
+			var servers = dcEpisodes[epNum].servers;
+			if (!srvContainer) return false;
+
+			srvContainer.innerHTML = '';
+			servers.forEach(function(s, idx) {
+				var btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn-server-item' + (idx === 0 ? ' active' : '');
+				btn.setAttribute('data-direct-url', s.url);
+				btn.style.cssText = 'background:' + (idx === 0 ? 'var(--accent-cyan, #00d4ff)' : 'rgba(255,255,255,0.07)') + '; color:' + (idx === 0 ? '#000' : '#fff') + '; border:1px solid ' + (idx === 0 ? 'var(--accent-cyan, #00d4ff)' : 'rgba(255,255,255,0.12)') + '; border-radius:6px; padding:7px 14px; font-size:0.82rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;';
+				btn.innerHTML = '▶ ' + s.label + (idx === 0 ? ' <span style="font-size:0.65rem; background:rgba(0,0,0,0.25); color:#000; padding:1px 5px; border-radius:3px; font-weight:900;">PRIMARY</span>' : '');
+
+				btn.addEventListener('click', function() {
+					srvContainer.querySelectorAll('.btn-server-item').forEach(function(b) {
+						b.classList.remove('active');
+						b.style.background = 'rgba(255,255,255,0.07)';
+						b.style.color = '#fff';
+						b.style.borderColor = 'rgba(255,255,255,0.12)';
+					});
+					this.classList.add('active');
+					this.style.background = 'var(--accent-cyan, #00d4ff)';
+					this.style.color = '#000';
+					this.style.borderColor = 'var(--accent-cyan, #00d4ff)';
+					if (iframe) {
+						iframe.src = s.url;
+					}
+				});
+
+				srvContainer.appendChild(btn);
+			});
+
+			if (iframe && servers[0]) {
+				iframe.src = servers[0].url;
+			}
+			return true;
+		}
 
 		function updatePlayerUrl() {
 			if (!iframe) return;
-			var targetUrl = currentTemplate.replace(/\{season\}/g, currentSeason).replace(/\{episode\}/g, currentEpisode);
-			iframe.src = targetUrl;
 
 			var epBadge = document.getElementById('current-ep-badge');
 			if (epBadge) {
 				epBadge.textContent = 'Season ' + currentSeason + ' Episode ' + currentEpisode;
 			}
+
+			// If DramaCool scraped episode data exists
+			if (renderServersForEpisode(currentEpisode)) {
+				return;
+			}
+
+			// Standard template fallback
+			var targetUrl = currentTemplate.replace(/\{season\}/g, currentSeason).replace(/\{episode\}/g, currentEpisode);
+			iframe.src = targetUrl;
 		}
 
-		// 1. Server Switcher
+		// Initial load of DramaCool servers if available
+		if (dcEpisodes && dcEpisodes[currentEpisode]) {
+			renderServersForEpisode(currentEpisode);
+		}
+
+		// 1. Server Switcher (for non-scraped titles)
 		var srvBtns = document.querySelectorAll('.btn-server-item');
 		srvBtns.forEach(function(btn) {
 			btn.addEventListener('click', function() {
@@ -424,7 +490,7 @@ while ( have_posts() ) :
 				this.style.color = '#000';
 				this.style.borderColor = 'var(--accent-cyan, #00d4ff)';
 
-				currentTemplate = this.getAttribute('data-template');
+				currentTemplate = this.getAttribute('data-template') || '';
 				updatePlayerUrl();
 			});
 		});

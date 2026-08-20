@@ -474,6 +474,48 @@ function viko_sync_title_data( $post_id ) {
 /* Direct Asian Drama (DramaCool) Scraper                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Helper: Parse all streaming embed servers from a DramaCool episode HTML
+ */
+function viko_parse_dramacool_servers( $html ) {
+	$servers = array();
+
+	// 1. Check for server buttons (<button class="server-btn" data-src="...">)
+	if ( preg_match_all( '/<button[^>]+class=["\']server-btn[^"\']*["\'][^>]+data-src=["\']([^"\']+)["\'][^>]*>([\s\S]*?)<\/button>/i', $html, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $m ) {
+			$src  = esc_url_raw( trim( $m[1] ) );
+			$name = trim( strip_tags( str_replace( '▶', '', $m[2] ) ) );
+			if ( empty( $name ) ) {
+				$name = 'Server ' . ( count( $servers ) + 1 );
+			}
+			if ( $src ) {
+				$servers[] = array( 'label' => $name, 'url' => $src );
+			}
+		}
+	}
+
+	// 2. Fallback: check data-video list items
+	if ( empty( $servers ) && preg_match_all( '/<li[^>]+data-video=["\']([^"\']+)["\'][^>]*>([\s\S]*?)<\/li>/i', $html, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $m ) {
+			$src  = esc_url_raw( trim( $m[1] ) );
+			$name = trim( strip_tags( $m[2] ) );
+			if ( empty( $name ) ) {
+				$name = 'Server ' . ( count( $servers ) + 1 );
+			}
+			if ( $src ) {
+				$servers[] = array( 'label' => $name, 'url' => $src );
+			}
+		}
+	}
+
+	// 3. Fallback: main iframe src
+	if ( empty( $servers ) && preg_match( '/<iframe[^>]+src=["\']([^"\']+)["\']/i', $html, $m ) ) {
+		$servers[] = array( 'label' => 'Fast Server', 'url' => esc_url_raw( trim( $m[1] ) ) );
+	}
+
+	return $servers;
+}
+
 function viko_import_dramacool_url( $url ) {
 	$url = esc_url_raw( trim( $url ) );
 	if ( ! $url ) {
@@ -497,8 +539,11 @@ function viko_import_dramacool_url( $url ) {
 
 	// Extract Title
 	$title = '';
-	if ( preg_match( '/<h1[^>]*>([^<]+)<\/h1>/i', $html, $m ) ) {
-		$title = html_entity_decode( trim( $m[1] ), ENT_QUOTES, 'UTF-8' );
+	if ( preg_match( '/<h1[^>]*>([\s\S]*?)<\/h1>/i', $html, $m ) ) {
+		$raw_title = html_entity_decode( trim( strip_tags( $m[1] ) ), ENT_QUOTES, 'UTF-8' );
+		$title = preg_replace( '/Episode\s+\d+.*$/i', '', $raw_title );
+		$title = preg_replace( '/English\s+Sub.*$/i', '', $title );
+		$title = trim( $title, " -|\t\n\r\0\x0B" );
 	}
 
 	if ( empty( $title ) ) {
@@ -507,7 +552,11 @@ function viko_import_dramacool_url( $url ) {
 
 	// Extract Poster
 	$poster = '';
-	if ( preg_match( '/<div class="img"[^>]*>[\s\S]*?<img[^>]+src=["\']([^"\']+)["\']/i', $html, $m ) ) {
+	if ( preg_match( '/<img[^>]+src=["\']([^"\']*uploads[^"\']*\.(?:jpg|jpeg|png|webp))["\']/i', $html, $m ) ) {
+		$poster = $m[1];
+	} elseif ( preg_match( '/<meta property="og:image" content=["\']([^"\']+)["\']/i', $html, $m ) ) {
+		$poster = $m[1];
+	} elseif ( preg_match( '/<div class="img"[^>]*>[\s\S]*?<img[^>]+src=["\']([^"\']+)["\']/i', $html, $m ) ) {
 		$poster = $m[1];
 	}
 
@@ -515,17 +564,93 @@ function viko_import_dramacool_url( $url ) {
 	$synopsis = '';
 	if ( preg_match( '/<div class="info"[^>]*>([\s\S]*?)<\/div>/i', $html, $m ) ) {
 		$synopsis = strip_tags( $m[1], '<p><br><strong><b>' );
+	} elseif ( preg_match( '/<meta name="description" content=["\']([^"\']+)["\']/i', $html, $m ) ) {
+		$synopsis = html_entity_decode( trim( $m[1] ), ENT_QUOTES, 'UTF-8' );
 	}
 
-	// Count Episodes
-	$ep_matches = array();
-	preg_match_all( '/href=["\'][^"\']+-episode-(\d+)[^"\']*["\']/i', $html, $ep_matches );
-	$max_ep = 12;
-	if ( ! empty( $ep_matches[1] ) ) {
-		$max_ep = max( array_map( 'intval', $ep_matches[1] ) );
+	// Detect Base Slug and Domain
+	$domain = 'https://dramacool9.com.ro';
+	if ( preg_match( '/^(https?:\/\/[^\/]+)/i', $url, $dm ) ) {
+		$domain = $dm[1];
 	}
 
-	// Build Drama Item
+	$base_slug = '';
+	if ( preg_match( '/https?:\/\/[^\/]+\/([^\/]+)-episode-\d+\.html/i', $url, $sm ) ) {
+		$base_slug = $sm[1];
+	} else {
+		$base_slug = sanitize_title( $title );
+	}
+
+	// Extract Current Episode Number
+	$curr_ep_num = 1;
+	if ( preg_match( '/-episode-(\d+)\.html/i', $url, $em ) ) {
+		$curr_ep_num = (int) $em[1];
+	}
+
+	// Find all episode links on this drama's page
+	$ep_links = array();
+	$pattern  = '/' . preg_quote( $base_slug, '/' ) . '-episode-(\d+)\.html/i';
+	if ( preg_match_all( '/href=["\']([^"\']*' . preg_quote( $base_slug, '/' ) . '-episode-(\d+)\.html)["\']/i', $html, $ep_matches, PREG_SET_ORDER ) ) {
+		foreach ( $ep_matches as $ep_m ) {
+			$ep_num = (int) $ep_m[2];
+			$ep_url = $ep_m[1];
+			if ( strpos( $ep_url, 'http' ) !== 0 ) {
+				$ep_url = rtrim( $domain, '/' ) . '/' . ltrim( $ep_url, '/' );
+			}
+			$ep_links[ $ep_num ] = $ep_url;
+		}
+	}
+
+	if ( ! isset( $ep_links[ $curr_ep_num ] ) ) {
+		$ep_links[ $curr_ep_num ] = $url;
+	}
+
+	ksort( $ep_links );
+	$total_episodes_found = count( $ep_links );
+	$max_ep = ! empty( $ep_links ) ? max( array_keys( $ep_links ) ) : 1;
+
+	// Extract servers for current episode from already downloaded HTML
+	$episodes_data = array();
+	$curr_servers  = viko_parse_dramacool_servers( $html );
+	$episodes_data[ $curr_ep_num ] = array(
+		'episode' => $curr_ep_num,
+		'title'   => "Episode {$curr_ep_num}",
+		'servers' => $curr_servers,
+	);
+
+	// Scrape other episode pages
+	foreach ( $ep_links as $ep_n => $ep_link ) {
+		if ( $ep_n === $curr_ep_num ) {
+			continue;
+		}
+
+		$ep_resp = wp_remote_get( $ep_link, array(
+			'timeout'    => 12,
+			'sslverify'  => false,
+			'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+		));
+
+		if ( ! is_wp_error( $ep_resp ) ) {
+			$ep_html = wp_remote_retrieve_body( $ep_resp );
+			$servers = viko_parse_dramacool_servers( $ep_html );
+			$episodes_data[ $ep_n ] = array(
+				'episode' => $ep_n,
+				'title'   => "Episode {$ep_n}",
+				'servers' => $servers,
+			);
+		} else {
+			// Fallback placeholder servers
+			$episodes_data[ $ep_n ] = array(
+				'episode' => $ep_n,
+				'title'   => "Episode {$ep_n}",
+				'servers' => $curr_servers,
+			);
+		}
+	}
+
+	ksort( $episodes_data );
+
+	// Build Drama Post Item
 	$item = array(
 		'tmdb'        => 0,
 		'is_movie'    => false,
@@ -536,7 +661,7 @@ function viko_import_dramacool_url( $url ) {
 		'poster'      => $poster,
 		'backdrop'    => $poster,
 		'rating'      => 8.8,
-		'genres'      => array( 'Asian Drama', 'Romance', 'Drama' ),
+		'genres'      => array( 'Asian Drama', 'Romance', 'Drama', 'Action' ),
 		'origin'      => 'South Korea',
 		'recommended' => true,
 	);
@@ -548,16 +673,28 @@ function viko_import_dramacool_url( $url ) {
 
 	$post_id = $res['post_id'];
 	$seasons_map = array(
-		array( 's' => 1, 'e' => max( 1, $max_ep ), 'name' => 'Season 1' )
+		array(
+			's'    => 1,
+			'e'    => max( count( $episodes_data ), $max_ep ),
+			'name' => 'Season 1',
+		)
 	);
+
+	// Save all DramaCool episodes and server embeds in meta
 	update_post_meta( $post_id, '_viko_seasons', 1 );
-	update_post_meta( $post_id, '_viko_total_episodes', $max_ep );
+	update_post_meta( $post_id, '_viko_total_episodes', max( count( $episodes_data ), $max_ep ) );
 	update_post_meta( $post_id, '_viko_seasons_map', $seasons_map );
+	update_post_meta( $post_id, '_viko_dramacool_episodes', $episodes_data );
+	update_post_meta( $post_id, '_viko_drama_slug', $base_slug );
+	if ( $poster ) {
+		update_post_meta( $post_id, '_viko_poster_url', esc_url_raw( $poster ) );
+		update_post_meta( $post_id, '_viko_backdrop_url', esc_url_raw( $poster ) );
+	}
 
 	return array(
 		'post_id'   => $post_id,
 		'title'     => $title,
-		'total_eps' => $max_ep,
+		'total_eps' => count( $episodes_data ),
 		'view'      => get_permalink( $post_id ),
 	);
 }
