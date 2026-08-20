@@ -1,0 +1,57 @@
+/* VikoStream — admin tool styling. */
+
+.viko-admin h1 { font-weight: 800; }
+
+.viko-toolbar { display: flex; align-items: center; gap: 22px; margin: 14px 0 18px; }
+.viko-reco-toggle { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.viko-status { font-weight: 700; color: #00a32a; }
+.viko-status.err { color: #d63638; }
+
+/* search bar */
+.viko-searchbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 20px; max-width: 860px; }
+.viko-searchbar input[type="text"], .viko-searchbar select { padding: 8px 12px; }
+.viko-searchbar #viko-q { flex: 1; min-width: 260px; font-size: 15px; }
+.viko-discover select, .viko-discover input { min-width: 150px; }
+
+/* results grid */
+.viko-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; max-width: 1180px; }
+.viko-empty-msg { color: #646970; font-style: italic; }
+
+.viko-card {
+  display: flex; gap: 14px; padding: 12px;
+  background: #fff; border: 1px solid #c3c4c7; border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.05);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.viko-card:hover { border-color: #f5c518; box-shadow: 0 8px 22px rgba(0,0,0,.1); transform: translateY(-2px); }
+.viko-card__check { align-self: flex-start; padding-top: 4px; }
+.viko-card__poster { position: relative; flex: none; width: 86px; height: 128px; border-radius: 8px; overflow: hidden; background: #dcdcde; }
+.viko-card__poster img { width: 100%; height: 100%; object-fit: cover; }
+.viko-card__ph { display: grid; place-items: center; width: 100%; height: 100%; color: #8c8f94; font-size: 22px; }
+.viko-card__type {
+  position: absolute; left: 5px; bottom: 5px; padding: 2px 7px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #fff;
+}
+.viko-card__type--movie { background: #dba100; }
+.viko-card__type--tvshow { background: #2271b1; }
+.viko-card__type--asian-drama { background: #d63638; }
+.viko-card__info { display: flex; flex-direction: column; min-width: 0; }
+.viko-card__title { font-size: 14.5px; line-height: 1.3; }
+.viko-card__meta { font-size: 12px; color: #646970; margin-top: 3px; }
+.viko-card__genres { font-size: 11.5px; color: #8c8f94; margin-top: 4px; }
+.viko-card__actions { margin-top: auto; padding-top: 8px; }
+.viko-card__actions .viko-done { background: #00a32a; border-color: #00a32a; color: #fff; }
+
+.viko-pager { display: flex; align-items: center; gap: 14px; margin: 20px 0; }
+.viko-pageinfo { color: #646970; font-weight: 600; }
+
+/* progress */
+.viko-progress { max-width: 520px; height: 14px; background: #f0f0f1; border: 1px solid #c3c4c7; border-radius: 999px; overflow: hidden; margin: 12px 0; }
+.viko-progress__bar { height: 100%; width: 0; background: linear-gradient(90deg, #dba100, #f5c518); transition: width .4s ease; }
+
+#viko-bulk-list { width: 100%; max-width: 640px; font-family: Consolas, monospace; }
+
+/* blocks table */
+.viko-blocks-table td { vertical-align: middle; }
+.viko-order { display: inline-block; min-width: 22px; font-weight: 800; color: #646970; }
+.viko-row-off { opacity: .45; }

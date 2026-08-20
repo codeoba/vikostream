@@ -1,0 +1,9 @@
+# WordPress & OS ignored files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+.idea/
+.vscode/
+node_modules/

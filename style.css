@@ -1,0 +1,19 @@
+/*
+Theme Name:        VikoStream
+Theme URI:         https://vikoba.mdandu.com/
+Description:       Premium movie, TV show & Asian drama streaming theme. Homepage slider + A–Z filter + unlimited custom content blocks (by type, genre or category), TMDB auto-importer (search by title / IMDB ID / genre+year, bulk import, pagination), auto embed players from the world's biggest sources with DramaCool servers for Asian dramas, live search, watch page with server tabs and season/episode selector.
+Version:           1.1.1
+Requires at least: 6.0
+Tested up to:      6.7
+Requires PHP:      7.4
+Author:            Mohamed Nurdin Mgaza
+Author URI:        https://vikoba.mdandu.com/
+License:           MIT License
+License URI:       https://opensource.org/licenses/MIT
+Text Domain:       vikostream
+Tags:              entertainment, streaming, movies, dark, custom-menu, featured-images, translation-ready
+
+VikoStream — the cinema lives here.
+Frontend design system: assets/css/theme.css
+Admin tools:          assets/css/admin.css + assets/js/admin.js
+*/
