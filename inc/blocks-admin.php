@@ -1,8 +1,8 @@
 <?php
 /**
- * VikoStream — homepage block manager.
+ * VikoStream — Homepage Block Manager.
  * Option `viko_home_blocks`: ordered array of blocks rendered on the front page.
- * A block rule can be: recommended | type:<slug> | genre:<slug>
+ * Content blocks display in clean, normal grid layout with customizable post count.
  *
  * @package VikoStream
  */
@@ -15,10 +15,10 @@ function viko_default_blocks() {
 	return array(
 		array( 'id' => 'b1', 'enabled' => 1, 'style' => 'slider',   'title' => 'Featured',      'rule' => 'recommended',        'sort' => 'new', 'count' => 6 ),
 		array( 'id' => 'b2', 'enabled' => 1, 'style' => 'alphabet', 'title' => 'Browse A–Z',    'rule' => '',                   'sort' => 'az',  'count' => 18 ),
-		array( 'id' => 'b3', 'enabled' => 1, 'style' => 'row',      'title' => 'Recommended',   'rule' => 'recommended',        'sort' => 'new', 'count' => 12 ),
-		array( 'id' => 'b4', 'enabled' => 1, 'style' => 'row',      'title' => 'Latest Movies', 'rule' => 'type:movie',         'sort' => 'new', 'count' => 12 ),
-		array( 'id' => 'b5', 'enabled' => 1, 'style' => 'row',      'title' => 'TV Shows',      'rule' => 'type:tvshow',        'sort' => 'new', 'count' => 12 ),
-		array( 'id' => 'b6', 'enabled' => 1, 'style' => 'row',      'title' => 'Asian Dramas',  'rule' => 'type:asian-drama',   'sort' => 'new', 'count' => 12 ),
+		array( 'id' => 'b3', 'enabled' => 1, 'style' => 'grid',     'title' => 'Recommended',   'rule' => 'recommended',        'sort' => 'new', 'count' => 12 ),
+		array( 'id' => 'b4', 'enabled' => 1, 'style' => 'grid',     'title' => 'Latest Movies', 'rule' => 'type:movie',         'sort' => 'new', 'count' => 12 ),
+		array( 'id' => 'b5', 'enabled' => 1, 'style' => 'grid',     'title' => 'TV Shows',      'rule' => 'type:tvshow',        'sort' => 'new', 'count' => 12 ),
+		array( 'id' => 'b6', 'enabled' => 1, 'style' => 'grid',     'title' => 'Asian Dramas',  'rule' => 'type:asian-drama',   'sort' => 'new', 'count' => 12 ),
 	);
 }
 
@@ -27,6 +27,19 @@ function viko_get_blocks() {
 	if ( ! is_array( $blocks ) || ! $blocks ) {
 		$blocks = viko_default_blocks();
 		update_option( 'viko_home_blocks', $blocks );
+	} else {
+		// Convert any old 'row' style to standard normal 'grid' display
+		$changed = false;
+		foreach ( $blocks as &$b ) {
+			if ( isset( $b['style'] ) && 'row' === $b['style'] ) {
+				$b['style'] = 'grid';
+				$changed = true;
+			}
+		}
+		unset( $b );
+		if ( $changed ) {
+			update_option( 'viko_home_blocks', $blocks );
+		}
 	}
 	return $blocks;
 }
@@ -35,7 +48,7 @@ function viko_get_blocks() {
 function viko_block_query( $block ) {
 	$args = array(
 		'post_type'      => 'viko_title',
-		'posts_per_page' => max( 1, (int) ( $block['count'] ?? 12 ) ),
+		'posts_per_page' => max( 1, min( 100, (int) ( $block['count'] ?? 12 ) ) ),
 		'post_status'    => 'publish',
 	);
 	$rule = $block['rule'] ?? '';
@@ -152,7 +165,7 @@ function viko_blocks_handle() {
 		$blocks[] = array(
 			'id'      => 'b' . substr( md5( uniqid( '', true ) ), 0, 6 ),
 			'enabled' => 1,
-			'style'   => 'row',
+			'style'   => 'grid',
 			'title'   => __( 'New Block', 'vikostream' ),
 			'rule'    => 'type:movie',
 			'sort'    => 'new',
@@ -161,14 +174,20 @@ function viko_blocks_handle() {
 	} elseif ( 'update' === $action && isset( $_POST['blocks'] ) && is_array( $_POST['blocks'] ) ) {
 		$clean = array();
 		foreach ( wp_unslash( $_POST['blocks'] ) as $b ) {
+			$style = in_array( $b['style'] ?? '', array( 'slider', 'alphabet', 'grid', 'row' ), true ) ? $b['style'] : 'grid';
+			// Ensure content blocks default to normal grid display
+			if ( 'row' === $style ) {
+				$style = 'grid';
+			}
+
 			$clean[] = array(
 				'id'      => sanitize_key( $b['id'] ),
 				'enabled' => isset( $b['enabled'] ) ? 1 : 0,
-				'style'   => in_array( $b['style'] ?? '', array( 'slider', 'alphabet', 'row', 'grid' ), true ) ? $b['style'] : 'row',
+				'style'   => $style,
 				'title'   => sanitize_text_field( $b['title'] ?? '' ),
 				'rule'    => sanitize_text_field( $b['rule'] ?? '' ),
 				'sort'    => sanitize_key( $b['sort'] ?? 'new' ),
-				'count'   => max( 1, min( 30, (int) ( $b['count'] ?? 12 ) ) ),
+				'count'   => max( 1, min( 100, (int) ( $b['count'] ?? 12 ) ) ),
 			);
 		}
 		$blocks = $clean;
@@ -200,14 +219,14 @@ add_action( 'admin_init', 'viko_blocks_handle' );
 
 /* dropdown options shared with the view */
 function viko_rule_options( $selected = '' ) {
-	$html  = '<option value="" ' . selected( $selected, '', false ) . '>— ' . esc_html__( 'Latest (zote)', 'vikostream' ) . ' —</option>';
+	$html  = '<option value="" ' . selected( $selected, '', false ) . '>— ' . esc_html__( 'Latest Titles (Zote)', 'vikostream' ) . ' —</option>';
 	$html .= '<option value="recommended" ' . selected( $selected, 'recommended', false ) . '>★ ' . esc_html__( 'Recommended', 'vikostream' ) . '</option>';
-	$html .= '<optgroup label="' . esc_attr__( 'Type', 'vikostream' ) . '">';
+	$html .= '<optgroup label="' . esc_attr__( 'Type (Aina ya Maudhui)', 'vikostream' ) . '">';
 	foreach ( get_terms( array( 'taxonomy' => 'viko_type', 'hide_empty' => false ) ) as $t ) {
 		$val  = 'type:' . $t->slug;
 		$html .= '<option value="' . esc_attr( $val ) . '" ' . selected( $selected, $val, false ) . '>' . esc_html( $t->name ) . '</option>';
 	}
-	$html .= '</optgroup><optgroup label="' . esc_attr__( 'Genre', 'vikostream' ) . '">';
+	$html .= '</optgroup><optgroup label="' . esc_attr__( 'Genre (Aina ya Movie/Series)', 'vikostream' ) . '">';
 	foreach ( get_terms( array( 'taxonomy' => 'viko_genre', 'hide_empty' => false ) ) as $t ) {
 		$val  = 'genre:' . $t->slug;
 		$html .= '<option value="' . esc_attr( $val ) . '" ' . selected( $selected, $val, false ) . '>' . esc_html( $t->name ) . '</option>';
@@ -218,11 +237,11 @@ function viko_rule_options( $selected = '' ) {
 
 function viko_sort_options( $selected = 'new' ) {
 	$opts = array(
-		'new'    => __( 'Latest first', 'vikostream' ),
-		'rating' => __( 'Top rated', 'vikostream' ),
-		'year'   => __( 'Newest year', 'vikostream' ),
-		'az'     => __( 'A → Z', 'vikostream' ),
-		'random' => __( 'Random', 'vikostream' ),
+		'new'    => __( 'Latest (Mpya kwanza)', 'vikostream' ),
+		'rating' => __( 'Top rated (Rating ya juu)', 'vikostream' ),
+		'year'   => __( 'Newest year (Mwaka mpya)', 'vikostream' ),
+		'az'     => __( 'A → Z (Kialfabeti)', 'vikostream' ),
+		'random' => __( 'Random (Mchanganyiko)', 'vikostream' ),
 	);
 	$html = '';
 	foreach ( $opts as $v => $l ) {
