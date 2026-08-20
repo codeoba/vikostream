@@ -19,26 +19,28 @@ function viko_default_providers() {
 	return array(
 		'movie'       => array(
 			array( 'id' => 'vidsrcme',  'label' => 'Server 1 (VidSrc ME)',    'url' => 'https://vidsrc.me/embed/movie/{imdb}',                    'enabled' => 1, 'order' => 1 ),
-			array( 'id' => 'autoembed', 'label' => 'Server 2 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/movie/{tmdb}',          'enabled' => 1, 'order' => 2 ),
-			array( 'id' => 'vidsrcto',  'label' => 'Server 3 (VidSrc PRO)',   'url' => 'https://vidsrc.to/embed/movie/{tmdb}',                    'enabled' => 1, 'order' => 3 ),
-			array( 'id' => 'multi',     'label' => 'Server 4 (SuperEmbed)',   'url' => 'https://multiembed.mov/?video_id={imdb}&tmdb=1',          'enabled' => 1, 'order' => 4 ),
-			array( 'id' => 'vsembed',   'label' => 'Server 5 (VSEmbed)',      'url' => 'https://vsembed.ru/embed/movie/{imdb}',                   'enabled' => 1, 'order' => 5 ),
-			array( 'id' => 'vidlink',   'label' => 'Server 6 (VidLink)',      'url' => 'https://vidlink.pro/movie/{tmdb}?primaryColor=00d4ff',     'enabled' => 1, 'order' => 6 ),
+			array( 'id' => 'multi',     'label' => 'Server 2 (MultiEmbed)',   'url' => 'https://multiembed.mov/?video_id={tmdb}&tmdb=1',          'enabled' => 1, 'order' => 2 ),
+			array( 'id' => 'vidlink',   'label' => 'Server 3 (VidLink PRO)',  'url' => 'https://vidlink.pro/movie/{tmdb}?primaryColor=00d4ff',     'enabled' => 1, 'order' => 3 ),
+			array( 'id' => 'vidsrcto',  'label' => 'Server 4 (VidSrc PRO)',   'url' => 'https://vidsrc.to/embed/movie/{tmdb}',                    'enabled' => 1, 'order' => 4 ),
+			array( 'id' => 'autoembed', 'label' => 'Server 5 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/movie/{tmdb}',          'enabled' => 1, 'order' => 5 ),
+			array( 'id' => 'vsembed',   'label' => 'Server 6 (VSEmbed)',      'url' => 'https://vsembed.ru/embed/movie/{imdb}',                   'enabled' => 1, 'order' => 6 ),
 		),
 		'tv'          => array(
 			array( 'id' => 'vidsrcme',  'label' => 'Server 1 (VidSrc ME)',    'url' => 'https://vidsrc.me/embed/tv/{imdb}/{season}/{episode}',                   'enabled' => 1, 'order' => 1 ),
-			array( 'id' => 'autoembed', 'label' => 'Server 2 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/tv/{tmdb}/{season}/{episode}',         'enabled' => 1, 'order' => 2 ),
-			array( 'id' => 'vidsrcto',  'label' => 'Server 3 (VidSrc PRO)',   'url' => 'https://vidsrc.to/embed/tv/{tmdb}/{season}/{episode}',                   'enabled' => 1, 'order' => 3 ),
-			array( 'id' => 'multi',     'label' => 'Server 4 (SuperEmbed)',   'url' => 'https://multiembed.mov/?video_id={imdb}&tmdb=1&s={season}&e={episode}', 'enabled' => 1, 'order' => 4 ),
-			array( 'id' => 'vsembed',   'label' => 'Server 5 (VSEmbed)',      'url' => 'https://vsembed.ru/embed/tv/{imdb}/{season}-{episode}',                  'enabled' => 1, 'order' => 5 ),
+			array( 'id' => 'multi',     'label' => 'Server 2 (MultiEmbed)',   'url' => 'https://multiembed.mov/?video_id={tmdb}&tmdb=1&s={season}&e={episode}', 'enabled' => 1, 'order' => 2 ),
+			array( 'id' => 'vidlink',   'label' => 'Server 3 (VidLink PRO)',  'url' => 'https://vidlink.pro/tv/{tmdb}/{season}/{episode}',                       'enabled' => 1, 'order' => 3 ),
+			array( 'id' => 'vidsrcto',  'label' => 'Server 4 (VidSrc PRO)',   'url' => 'https://vidsrc.to/embed/tv/{tmdb}/{season}/{episode}',                   'enabled' => 1, 'order' => 4 ),
+			array( 'id' => 'autoembed', 'label' => 'Server 5 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/tv/{tmdb}/{season}/{episode}',         'enabled' => 1, 'order' => 5 ),
+			array( 'id' => 'vsembed',   'label' => 'Server 6 (VSEmbed)',      'url' => 'https://vsembed.ru/embed/tv/{imdb}/{season}-{episode}',                  'enabled' => 1, 'order' => 6 ),
 		),
 		'asian-drama' => array(
 			array( 'id' => 'vidsrcme',  'label' => 'Server 1 (VidSrc ME)',    'url' => 'https://vidsrc.me/embed/tv/{imdb}/{season}/{episode}',                   'enabled' => 1, 'order' => 1 ),
-			array( 'id' => 'dramacool', 'label' => 'Server 2 (DramaCool)',    'url' => 'https://embtaku.pro/streaming.php?id={slug}-episode-{episode}',          'enabled' => 1, 'order' => 2 ),
-			array( 'id' => 'autoembed', 'label' => 'Server 3 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/tv/{tmdb}/{season}/{episode}',         'enabled' => 1, 'order' => 3 ),
+			array( 'id' => 'multi',     'label' => 'Server 2 (MultiEmbed)',   'url' => 'https://multiembed.mov/?video_id={tmdb}&tmdb=1&s={season}&e={episode}', 'enabled' => 1, 'order' => 2 ),
+			array( 'id' => 'vidlink',   'label' => 'Server 3 (VidLink PRO)',  'url' => 'https://vidlink.pro/tv/{tmdb}/{season}/{episode}',                       'enabled' => 1, 'order' => 3 ),
 			array( 'id' => 'vidsrcto',  'label' => 'Server 4 (VidSrc PRO)',   'url' => 'https://vidsrc.to/embed/tv/{tmdb}/{season}/{episode}',                   'enabled' => 1, 'order' => 4 ),
-			array( 'id' => 'multi',     'label' => 'Server 5 (SuperEmbed)',   'url' => 'https://multiembed.mov/?video_id={imdb}&tmdb=1&s={season}&e={episode}', 'enabled' => 1, 'order' => 5 ),
-			array( 'id' => 'kissasian', 'label' => 'Server 6 (KissAsian)',    'url' => 'https://kissasian.video/drama/{slug}/episode-{episode}',                 'enabled' => 1, 'order' => 6 ),
+			array( 'id' => 'autoembed', 'label' => 'Server 5 (AutoEmbed CC)', 'url' => 'https://player.autoembed.cc/embed/tv/{tmdb}/{season}/{episode}',         'enabled' => 1, 'order' => 5 ),
+			array( 'id' => 'dramacool', 'label' => 'Server 6 (AsianEmbed)',   'url' => 'https://asianembed.io/streaming.php?id={slug}-episode-{episode}',         'enabled' => 1, 'order' => 6 ),
+			array( 'id' => 'vsembed',   'label' => 'Server 7 (VSEmbed)',      'url' => 'https://vsembed.ru/embed/tv/{imdb}/{season}-{episode}',                  'enabled' => 1, 'order' => 7 ),
 		),
 	);
 }
@@ -51,7 +53,6 @@ function viko_get_providers( $group ) {
 	$saved    = get_option( 'viko_server_list_' . $group, null );
 
 	if ( ! is_array( $saved ) || empty( $saved ) ) {
-		// Try legacy fallback
 		$enabled_ids = get_option( 'viko_providers_' . $group, null );
 		if ( is_array( $enabled_ids ) && ! empty( $enabled_ids ) ) {
 			$list = array();
@@ -110,12 +111,12 @@ function viko_build_players( $post_id ) {
 	$clean_imdb = trim( $imdb );
 	$clean_tmdb = preg_replace( '/[^0-9]/', '', (string) $tmdb );
 
-	// Fallback ID if missing
+	// Smart fallbacks between IMDb & TMDb
 	if ( empty( $clean_imdb ) && empty( $clean_tmdb ) ) {
 		$clean_imdb = 'tt6723592';
 		$clean_tmdb = '577922';
 	} elseif ( empty( $clean_imdb ) ) {
-		$clean_imdb = 'tt' . $clean_tmdb;
+		$clean_imdb = $clean_tmdb; // Multi-servers accept tmdb id
 	} elseif ( empty( $clean_tmdb ) ) {
 		$clean_tmdb = preg_replace( '/[^0-9]/', '', $clean_imdb );
 	}
